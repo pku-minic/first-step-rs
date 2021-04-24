@@ -62,8 +62,12 @@ impl<T: Read> Lexer<T> {
   fn next_char(&mut self) {
     // NOTE: UTF-8 characters will not be handled here.
     let mut single_char = [0];
-    if let Ok(_) = self.readable.read(&mut single_char) {
-      self.last_char = Some(single_char[0] as char);
+    if let Ok(n) = self.readable.read(&mut single_char) {
+      self.last_char = if n != 0 {
+        Some(single_char[0] as char)
+      } else {
+        None
+      };
     } else {
       self.last_char = None;
     }
@@ -120,7 +124,7 @@ impl<T: Read> Lexer<T> {
   /// Handles comment.
   fn handle_comment(&mut self) -> Result {
     // skip the current line
-    while self.last_char.map_or(false, |c| c == '\r' || c == '\n') {
+    while self.last_char.map_or(false, |c| c != '\r' && c != '\n') {
       self.next_char();
     }
     // return the next token
@@ -162,4 +166,46 @@ fn parse_operator(s: &str) -> Option<Operator> {
     "=" => Operator::Assign,
   };
   OPERATORS.get(s).cloned()
+}
+
+/// Unit tests for `Lexer`.
+#[cfg(test)]
+mod tests {
+  use super::{Keyword, Lexer, Operator, Token::*};
+  use std::io::Cursor;
+
+  #[test]
+  fn test_lexer() {
+    let buf = Cursor::new(
+      r#"
+      # test comment
+      func(x) {
+        # comment2
+        if x == 10 {
+          return x + 11
+        }
+      }
+      "#,
+    );
+    let mut lexer = Lexer::new(buf);
+    assert_eq!(lexer.next_token(), Ok(Id("func".to_string())));
+    assert_eq!(lexer.next_token(), Ok(Other('(')));
+    assert_eq!(lexer.next_token(), Ok(Id("x".to_string())));
+    assert_eq!(lexer.next_token(), Ok(Other(')')));
+    assert_eq!(lexer.next_token(), Ok(Other('{')));
+    assert_eq!(lexer.next_token(), Ok(Key(Keyword::If)));
+    assert_eq!(lexer.next_token(), Ok(Id("x".to_string())));
+    assert_eq!(lexer.next_token(), Ok(Op(Operator::Eq)));
+    assert_eq!(lexer.next_token(), Ok(Int(10)));
+    assert_eq!(lexer.next_token(), Ok(Other('{')));
+    assert_eq!(lexer.next_token(), Ok(Key(Keyword::Return)));
+    assert_eq!(lexer.next_token(), Ok(Id("x".to_string())));
+    assert_eq!(lexer.next_token(), Ok(Op(Operator::Add)));
+    assert_eq!(lexer.next_token(), Ok(Int(11)));
+    assert_eq!(lexer.next_token(), Ok(Other('}')));
+    assert_eq!(lexer.next_token(), Ok(Other('}')));
+    assert_eq!(lexer.next_token(), Ok(End));
+    assert_eq!(lexer.next_token(), Ok(End));
+    assert_eq!(lexer.next_token(), Ok(End));
+  }
 }
