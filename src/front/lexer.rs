@@ -1,11 +1,10 @@
 use crate::define::{Keyword, Operator, Token};
 use phf::phf_map;
-use std::fs::File;
 use std::io::Read;
 
 /// Lexer for `first-step` language.
-pub struct Lexer {
-  file: File,
+pub struct Lexer<T: Read> {
+  readable: T,
   last_char: Option<char>,
   error_num: usize,
 }
@@ -13,11 +12,11 @@ pub struct Lexer {
 /// `Result` for token handlers of `Lexer`.
 type Result = std::result::Result<Token, &'static str>;
 
-impl Lexer {
+impl<T: Read> Lexer<T> {
   /// Creates a new `Lexer` object from the specific file.
-  pub fn new(file: File) -> Self {
+  pub fn new(readable: T) -> Self {
     Lexer {
-      file: file,
+      readable: readable,
       last_char: Some(' '),
       error_num: 0,
     }
@@ -63,7 +62,7 @@ impl Lexer {
   fn next_char(&mut self) {
     // NOTE: UTF-8 characters will not be handled here.
     let mut single_char = [0];
-    if let Ok(_) = self.file.read(&mut single_char) {
+    if let Ok(_) = self.readable.read(&mut single_char) {
       self.last_char = Some(single_char[0] as char);
     } else {
       self.last_char = None;
