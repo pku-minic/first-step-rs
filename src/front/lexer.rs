@@ -6,7 +6,6 @@ use std::io::Read;
 pub struct Lexer<T: Read> {
   readable: T,
   last_char: Option<char>,
-  error_num: usize,
 }
 
 /// `Result` for token handlers of `Lexer`.
@@ -18,7 +17,6 @@ impl<T: Read> Lexer<T> {
     Lexer {
       readable: readable,
       last_char: Some(' '),
-      error_num: 0,
     }
   }
 
@@ -51,11 +49,6 @@ impl<T: Read> Lexer<T> {
       // may be EOF, or other file errors
       Ok(Token::End)
     }
-  }
-
-  /// Returns the error number.
-  pub fn error_num(&self) -> usize {
-    self.error_num
   }
 
   /// Reads a character from file.
