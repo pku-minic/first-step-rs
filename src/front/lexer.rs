@@ -9,10 +9,10 @@ pub struct Lexer<T: Read> {
 }
 
 /// `Result` for token handlers of `Lexer`.
-type Result = std::result::Result<Token, &'static str>;
+pub type Result = std::result::Result<Token, &'static str>;
 
 impl<T: Read> Lexer<T> {
-  /// Creates a new `Lexer` object from the specific file.
+  /// Creates a new `Lexer` object from the specific `Read` object.
   pub fn new(readable: T) -> Self {
     Lexer {
       readable: readable,
