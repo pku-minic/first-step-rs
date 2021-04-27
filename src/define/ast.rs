@@ -1,7 +1,7 @@
 use crate::define::Operator;
 
 /// Interfaces of ASTs.
-pub trait AST {
+pub trait Ast {
   /// Evaluates AST using the specific interpreter.
   fn eval<T: ASTVisitor>(&self, visitor: &mut T) -> T::Result
   where
@@ -14,7 +14,7 @@ pub trait AST {
 }
 
 /// Box for ASTs.
-pub type ASTBox = Box<dyn AST>;
+pub type AstBox = Box<dyn Ast>;
 
 /// Interfaces of AST visitors.
 pub trait ASTVisitor {
@@ -47,10 +47,10 @@ pub trait ASTVisitor {
 pub struct FunDefAST {
   pub name: String,
   pub args: Vec<String>,
-  pub body: ASTBox,
+  pub body: AstBox,
 }
 
-impl AST for FunDefAST {
+impl Ast for FunDefAST {
   fn eval<T: ASTVisitor>(&self, visitor: &mut T) -> T::Result {
     visitor.visit_fundef(self)
   }
@@ -62,10 +62,10 @@ impl AST for FunDefAST {
 
 /// Statement block.
 pub struct BlockAST {
-  pub stmts: Vec<ASTBox>,
+  pub stmts: Vec<AstBox>,
 }
 
-impl AST for BlockAST {
+impl Ast for BlockAST {
   fn eval<T: ASTVisitor>(&self, visitor: &mut T) -> T::Result {
     visitor.visit_block(self)
   }
@@ -78,10 +78,10 @@ impl AST for BlockAST {
 /// Define statement.
 pub struct DefineAST {
   pub name: String,
-  pub expr: ASTBox,
+  pub expr: AstBox,
 }
 
-impl AST for DefineAST {
+impl Ast for DefineAST {
   fn eval<T: ASTVisitor>(&self, visitor: &mut T) -> T::Result {
     visitor.visit_define(self)
   }
@@ -94,10 +94,10 @@ impl AST for DefineAST {
 /// Assign statement.
 pub struct AssignAST {
   pub name: String,
-  pub expr: ASTBox,
+  pub expr: AstBox,
 }
 
-impl AST for AssignAST {
+impl Ast for AssignAST {
   fn eval<T: ASTVisitor>(&self, visitor: &mut T) -> T::Result {
     visitor.visit_assign(self)
   }
@@ -109,12 +109,12 @@ impl AST for AssignAST {
 
 /// If-else statement.
 pub struct IfAST {
-  pub cond: ASTBox,
-  pub then: ASTBox,
-  pub else_then: ASTBox,
+  pub cond: AstBox,
+  pub then: AstBox,
+  pub else_then: AstBox,
 }
 
-impl AST for IfAST {
+impl Ast for IfAST {
   fn eval<T: ASTVisitor>(&self, visitor: &mut T) -> T::Result {
     visitor.visit_if(self)
   }
@@ -127,11 +127,11 @@ impl AST for IfAST {
 /// Binary expression.
 pub struct BinaryAST {
   pub op: Operator,
-  pub lhs: ASTBox,
-  pub rhs: ASTBox,
+  pub lhs: AstBox,
+  pub rhs: AstBox,
 }
 
-impl AST for BinaryAST {
+impl Ast for BinaryAST {
   fn eval<T: ASTVisitor>(&self, visitor: &mut T) -> T::Result {
     visitor.visit_binary(self)
   }
@@ -144,10 +144,10 @@ impl AST for BinaryAST {
 /// Unary expression.
 pub struct UnaryAST {
   pub op: Operator,
-  pub opr: ASTBox,
+  pub opr: AstBox,
 }
 
-impl AST for UnaryAST {
+impl Ast for UnaryAST {
   fn eval<T: ASTVisitor>(&self, visitor: &mut T) -> T::Result {
     visitor.visit_unary(self)
   }
@@ -160,10 +160,10 @@ impl AST for UnaryAST {
 /// Function call.
 pub struct FunCallAST {
   pub name: String,
-  pub args: Vec<ASTBox>,
+  pub args: Vec<AstBox>,
 }
 
-impl AST for FunCallAST {
+impl Ast for FunCallAST {
   fn eval<T: ASTVisitor>(&self, visitor: &mut T) -> T::Result {
     visitor.visit_funcall(self)
   }
@@ -178,7 +178,7 @@ pub struct IntAST {
   pub val: i32,
 }
 
-impl AST for IntAST {
+impl Ast for IntAST {
   fn eval<T: ASTVisitor>(&self, visitor: &mut T) -> T::Result {
     visitor.visit_int(self)
   }
@@ -193,7 +193,7 @@ pub struct IdAST {
   pub id: String,
 }
 
-impl AST for IdAST {
+impl Ast for IdAST {
   fn eval<T: ASTVisitor>(&self, visitor: &mut T) -> T::Result {
     visitor.visit_id(self)
   }
