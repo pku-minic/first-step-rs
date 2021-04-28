@@ -1,5 +1,6 @@
-mod token;
 mod ast;
+mod macros;
+mod token;
 
+pub use ast::{Ast, AstBox};
 pub use token::{Keyword, Operator, Token};
-pub use ast::*;
