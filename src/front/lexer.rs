@@ -9,7 +9,7 @@ pub struct Lexer<T: Read> {
 }
 
 /// `Result` for token handlers of `Lexer`.
-pub type Result = std::result::Result<Token, &'static str>;
+pub type Result = std::result::Result<Token, String>;
 
 impl<T: Read> Lexer<T> {
   /// Creates a new `Lexer` object from the specific `Read` object.
@@ -97,7 +97,7 @@ impl<T: Read> Lexer<T> {
     num
       .parse::<i32>()
       .map(|i| Token::Int(i))
-      .map_err(|_| "invalid integer literal")
+      .map_err(|_| String::from("invalid integer literal"))
   }
 
   /// Handles operators.
@@ -111,7 +111,7 @@ impl<T: Read> Lexer<T> {
     // check if is a valid operator
     parse_operator(&op)
       .map(|op| Token::Op(op))
-      .ok_or("invalid operator")
+      .ok_or(String::from("invalid operator"))
   }
 
   /// Handles comment.
