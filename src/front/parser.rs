@@ -346,6 +346,7 @@ impl<T: Read> Parser<T> {
     if !self.is_token_char(c) {
       Some(Error::Error(format!("expected '{}'", c)))
     } else {
+      self.next_token();
       None
     }
   }
@@ -381,5 +382,51 @@ impl<T: Read> Parser<T> {
       .cur_token
       .as_ref()
       .map_or(false, |t| *t == Token::Key(key))
+  }
+}
+
+/// Unit tests for `Parser`.
+#[cfg(test)]
+mod test {
+  use super::{Ast, Lexer, Operator, Parser};
+  use crate::unwrap_struct;
+  use std::io::Cursor;
+
+  #[test]
+  fn test_parser() {
+    let mut parser = Parser::new(Lexer::new(Cursor::new(
+      r#"
+      # test comment
+      func(x) {
+        # comment2
+        if x == 10 {
+          return x + 11
+        }
+      }
+      "#,
+    )));
+    let fundef = parser.parse_next().unwrap();
+    let (name, args, body) = unwrap_struct!(*fundef, Ast::FunDef, name, args, body);
+    assert_eq!(name, "func");
+    assert_eq!(args, ["x"]);
+    let (stmts,) = unwrap_struct!(*body, Ast::Block, stmts);
+    assert_eq!(stmts.len(), 1);
+    let (cond, then, else_then) = unwrap_struct!(&*stmts[0], Ast::If, cond, then, else_then);
+    let (op, lhs, rhs) = unwrap_struct!(&**cond, Ast::Binary, op, lhs, rhs);
+    assert_eq!(*op, Operator::Eq);
+    let (id,) = unwrap_struct!(&**lhs, Ast::Id, id);
+    assert_eq!(*id, "x");
+    let (val,) = unwrap_struct!(&**rhs, Ast::Int, val);
+    assert_eq!(*val, 10);
+    let (stmts,) = unwrap_struct!(&**then, Ast::Block, stmts);
+    assert_eq!(stmts.len(), 1);
+    let (expr,) = unwrap_struct!(&*stmts[0], Ast::Return, expr);
+    let (op, lhs, rhs) = unwrap_struct!(&**expr, Ast::Binary, op, lhs, rhs);
+    assert_eq!(*op, Operator::Add);
+    let (id,) = unwrap_struct!(&**lhs, Ast::Id, id);
+    assert_eq!(*id, "x");
+    let (val,) = unwrap_struct!(&**rhs, Ast::Int, val);
+    assert_eq!(*val, 11);
+    assert_eq!(else_then.is_none(), true);
   }
 }
