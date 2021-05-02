@@ -16,7 +16,7 @@ where
 {
   /// Creates a new nested map.
   pub fn new() -> NestedMapPtr<K, V> {
-    Box::new(NestedMap {
+    Box::new(Self {
       outer: None,
       map: HashMap::new(),
     })
@@ -24,7 +24,7 @@ where
 
   /// Creates a new nested map (with outer map).
   pub fn new_with_outer(outer: NestedMapPtr<K, V>) -> NestedMapPtr<K, V> {
-    Box::new(NestedMap {
+    Box::new(Self {
       outer: Some(outer),
       map: HashMap::new(),
     })

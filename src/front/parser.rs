@@ -25,7 +25,7 @@ pub type Result = std::result::Result<AstBox, Error>;
 impl<T: Read> Parser<T> {
   /// Creates a new `Parser` object from the specific `Lexer`.
   pub fn new(lexer: Lexer<T>) -> Self {
-    let mut parser = Parser {
+    let mut parser = Self {
       lexer: lexer,
       cur_token: Ok(Token::End),
     };

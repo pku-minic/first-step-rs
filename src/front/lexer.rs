@@ -14,7 +14,7 @@ pub type Result = std::result::Result<Token, String>;
 impl<T: Read> Lexer<T> {
   /// Creates a new `Lexer` object from the specific `Read` object.
   pub fn new(readable: T) -> Self {
-    Lexer {
+    Self {
       readable: readable,
       last_char: Some(' '),
     }
