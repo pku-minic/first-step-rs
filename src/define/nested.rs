@@ -100,4 +100,14 @@ where
   pub fn access(&mut self, k: &K) -> Option<&mut V> {
     self.map.get_mut(k)
   }
+
+  /// Unwrap & move the outer map.
+  pub fn outer(&mut self) -> NestedMapPtr<K, V> {
+    self.outer.unwrap()
+  }
+
+  /// Check if the current map is a root map.
+  pub fn is_root(&self) -> bool {
+    self.outer.is_none()
+  }
 }
