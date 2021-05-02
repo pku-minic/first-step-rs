@@ -78,9 +78,9 @@ pub trait AstVisitor {
   }
 
   /// Visits function definitions.
-  fn visit_fundef(&mut self, name: &String, args: &Vec<String>, body: &AstBox) -> Self::Result;
+  fn visit_fundef(&mut self, name: &String, args: &[String], body: &AstBox) -> Self::Result;
   /// Visits statement blocks.
-  fn visit_block(&mut self, stmts: &Vec<AstBox>) -> Self::Result;
+  fn visit_block(&mut self, stmts: &[AstBox]) -> Self::Result;
   /// Visits define statements.
   fn visit_define(&mut self, name: &String, expr: &AstBox) -> Self::Result;
   /// Visits assign statements.
@@ -94,7 +94,7 @@ pub trait AstVisitor {
   /// Visits unary statements.
   fn visit_unary(&mut self, op: &Operator, opr: &AstBox) -> Self::Result;
   /// Visits function calls.
-  fn visit_funcall(&mut self, name: &String, args: &Vec<AstBox>) -> Self::Result;
+  fn visit_funcall(&mut self, name: &String, args: &[AstBox]) -> Self::Result;
   /// Visits integer literals.
   fn visit_int(&mut self, val: &i32) -> Self::Result;
   /// Visits identifiers.
