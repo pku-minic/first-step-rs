@@ -101,9 +101,19 @@ where
     self.map.get_mut(k)
   }
 
-  /// Unwrap & move the outer map.
+  /// Unwrap & take the outer map.
   pub fn outer(&mut self) -> NestedMapPtr<K, V> {
-    self.outer.unwrap()
+    self.outer.take().unwrap()
+  }
+
+  /// Unwrap & get the reference of the outer map.
+  pub fn outer_ref(&self) -> &NestedMapPtr<K, V> {
+    self.outer.as_ref().unwrap()
+  }
+
+  /// Unwrap & get the mutable reference of the outer map.
+  pub fn outer_mut(&mut self) -> &mut NestedMapPtr<K, V> {
+    self.outer.as_mut().unwrap()
   }
 
   /// Check if the current map is a root map.
