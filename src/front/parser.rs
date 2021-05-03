@@ -53,9 +53,7 @@ impl<T: Read> Parser<T> {
     // get function name
     let name = ok_or_return!(self.expect_id());
     // check & eat '('
-    if let Some(err) = self.expect_char('(') {
-      return Err(err);
-    }
+    ok_or_return!(self.expect_char('('));
     // get formal arguments
     let mut args = Vec::new();
     if !self.is_token_char(')') {
@@ -70,9 +68,7 @@ impl<T: Read> Parser<T> {
       }
     }
     // check & eat ')'
-    if let Some(err) = self.expect_char(')') {
-      return Err(err);
-    }
+    ok_or_return!(self.expect_char(')'));
     // get function body
     self.parse_block().map(|body| {
       Box::new(Ast::FunDef {
@@ -86,9 +82,7 @@ impl<T: Read> Parser<T> {
   /// Parses blocks.
   fn parse_block(&mut self) -> Result {
     // check & eat '{'
-    if let Some(err) = self.expect_char('{') {
-      return Err(err);
-    }
+    ok_or_return!(self.expect_char('{'));
     // get statements
     let mut stmts = Vec::new();
     while !self.is_token_char('}') {
@@ -262,9 +256,7 @@ impl<T: Read> Parser<T> {
         // get expression
         let expr = ok_or_return!(self.parse_expr());
         // check & eat ')'
-        if let Some(err) = self.expect_char(')') {
-          return Err(err);
-        }
+        ok_or_return!(self.expect_char(')'));
         Ok(expr)
       }
       _ => Self::get_error("invalid value"),
@@ -289,9 +281,7 @@ impl<T: Read> Parser<T> {
       }
     }
     // check & eat ')'
-    if let Some(err) = self.expect_char(')') {
-      return Err(err);
-    }
+    ok_or_return!(self.expect_char(')'));
     Ok(Box::new(Ast::FunCall {
       name: id.to_string(),
       args: args,
@@ -342,12 +332,12 @@ impl<T: Read> Parser<T> {
   }
 
   /// Expects the specific character from lexer.
-  fn expect_char(&mut self, c: char) -> Option<Error> {
+  fn expect_char(&mut self, c: char) -> std::result::Result<(), Error> {
     if !self.is_token_char(c) {
-      Some(Error::Error(format!("expected '{}'", c)))
+      Err(Error::Error(format!("expected '{}'", c)))
     } else {
       self.next_token();
-      None
+      Ok(())
     }
   }
 
