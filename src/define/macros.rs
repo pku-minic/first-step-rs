@@ -21,14 +21,3 @@ macro_rules! unwrap_struct {
     }
   };
 }
-
-/// Unwraps an result, or returns error.
-#[macro_export]
-macro_rules! ok_or_return {
-  ($e:expr) => {
-    match $e {
-      Ok(ok) => ok,
-      Err(err) => return Err(err),
-    }
-  };
-}
