@@ -26,9 +26,8 @@ impl Interpreter {
     }
   }
 
-  /// Adds the specific function definition to interpreter,
-  /// returns false if failed.
-  pub fn add_func_def(&mut self, func: AstBox) -> bool {
+  /// Adds the specific function definition to interpreter
+  pub fn add_func_def(&mut self, func: AstBox) -> std::result::Result<(), &'static str> {
     match func.as_ref() {
       // get function name
       Ast::FunDef { name, .. } => {
@@ -36,9 +35,9 @@ impl Interpreter {
         if !self.intp.funcs.borrow().contains_key(name) {
           // add function definition
           self.intp.funcs.borrow_mut().insert(name.clone(), func);
-          true
+          Ok(())
         } else {
-          false
+          Err("function has already been defined")
         }
       }
       _ => panic!("not a function"),
