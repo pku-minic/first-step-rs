@@ -1,6 +1,6 @@
 use crate::define::{Ast, AstBox, AstVisitor};
 use crate::define::{NestedMap, Operator};
-use crate::{ok_or_return, unwrap_struct};
+use crate::unwrap_struct;
 use lazy_static::lazy_static;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -98,7 +98,7 @@ impl InterpreterImpl {
           Err("argument count mismatch")
         } else {
           // evaluate argument
-          let arg = ok_or_return!(self.visit(args.first().unwrap()));
+          let arg = self.visit(args.first().unwrap())?;
           // print to stdout
           println!("{}", arg);
           Ok(Some(0))
@@ -118,7 +118,7 @@ impl AstVisitor for InterpreterImpl {
     let ret = self.envs.borrow_mut().add(RET_VAL.clone(), 0);
     assert_eq!(ret, true, "environment corrupted");
     // evaluate function body
-    ok_or_return!(self.visit(body));
+    self.visit(body)?;
     // get return value
     Ok(*self.envs.borrow().get(&RET_VAL, false).unwrap())
   }
@@ -128,7 +128,7 @@ impl AstVisitor for InterpreterImpl {
     self.envs.borrow_mut().push();
     // evaluate all statements
     for stmt in stmts.iter() {
-      ok_or_return!(self.visit(stmt));
+      self.visit(stmt)?;
     }
     // exit the current environment
     self.envs.borrow_mut().pop();
@@ -137,7 +137,7 @@ impl AstVisitor for InterpreterImpl {
 
   fn visit_define(&mut self, name: &String, expr: &AstBox) -> Self::Result {
     // evaluate the expression
-    let expr = ok_or_return!(self.visit(expr));
+    let expr = self.visit(expr)?;
     // update the current environment
     if self.envs.borrow_mut().add(name.clone(), expr) {
       Ok(0)
@@ -148,7 +148,7 @@ impl AstVisitor for InterpreterImpl {
 
   fn visit_assign(&mut self, name: &String, expr: &AstBox) -> Self::Result {
     // evaluate the expression
-    let expr = ok_or_return!(self.visit(expr));
+    let expr = self.visit(expr)?;
     // update value of the symbol
     self
       .envs
@@ -160,7 +160,7 @@ impl AstVisitor for InterpreterImpl {
 
   fn visit_if(&mut self, cond: &AstBox, then: &AstBox, else_then: &Option<AstBox>) -> Self::Result {
     // evaluate the condition
-    let cond = ok_or_return!(self.visit(cond));
+    let cond = self.visit(cond)?;
     // evaluate true/false branch
     if cond != 0 {
       self.visit(then)
@@ -171,7 +171,7 @@ impl AstVisitor for InterpreterImpl {
 
   fn visit_return(&mut self, expr: &AstBox) -> Self::Result {
     // evaluate the return value
-    let expr = ok_or_return!(self.visit(expr));
+    let expr = self.visit(expr)?;
     // update the current return value
     let succ = self.envs.borrow_mut().update_rec(&RET_VAL, expr);
     assert_eq!(succ, true, "environment corrupted");
@@ -183,7 +183,7 @@ impl AstVisitor for InterpreterImpl {
     match *op {
       Operator::LAnd | Operator::LOr => {
         // evaluate lhs first
-        let lhs = ok_or_return!(self.visit(lhs));
+        let lhs = self.visit(lhs)?;
         // check if need to evaluate rhs
         if (*op == Operator::LAnd && lhs == 0) || (*op == Operator::LOr && lhs != 0) {
           Ok(lhs)
@@ -193,8 +193,8 @@ impl AstVisitor for InterpreterImpl {
       }
       _ => {
         // evaluate the lhs & rhs
-        let lhs = ok_or_return!(self.visit(lhs));
-        let rhs = ok_or_return!(self.visit(rhs));
+        let lhs = self.visit(lhs)?;
+        let rhs = self.visit(rhs)?;
         // perform binary operation
         Ok(match *op {
           Operator::Add => lhs + rhs,
@@ -214,7 +214,7 @@ impl AstVisitor for InterpreterImpl {
 
   fn visit_unary(&mut self, op: &Operator, opr: &AstBox) -> Self::Result {
     // evaluate the operand
-    let opr = ok_or_return!(self.visit(opr));
+    let opr = self.visit(opr)?;
     // perform unary operation
     Ok(match *op {
       Operator::Sub => -opr,
@@ -225,7 +225,7 @@ impl AstVisitor for InterpreterImpl {
 
   fn visit_funcall(&mut self, name: &String, args: &[AstBox]) -> Self::Result {
     // handle library function call
-    if let Some(ret) = ok_or_return!(self.call_lib_func(name, args)) {
+    if let Some(ret) = self.call_lib_func(name, args)? {
       return Ok(ret);
     }
     // find the specific function
@@ -240,7 +240,7 @@ impl AstVisitor for InterpreterImpl {
         }
         for (arg, name) in args.iter().zip(arg_names.iter()) {
           // evaluate the current arguments
-          let arg = ok_or_return!(self.visit(arg));
+          let arg = self.visit(arg)?;
           // add to the current environment
           if !self.envs.borrow_mut().add(name.clone(), arg) {
             return Err("redifinition of argument");

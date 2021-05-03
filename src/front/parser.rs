@@ -1,6 +1,5 @@
 use super::Lexer;
 use crate::define;
-use crate::ok_or_return;
 use define::{Ast, AstBox, Keyword, Operator, Token};
 use std::io::Read;
 
@@ -51,15 +50,15 @@ impl<T: Read> Parser<T> {
   /// Parses function definitions.
   fn parse_fundef(&mut self) -> Result {
     // get function name
-    let name = ok_or_return!(self.expect_id());
+    let name = self.expect_id()?;
     // check & eat '('
-    ok_or_return!(self.expect_char('('));
+    self.expect_char('(')?;
     // get formal arguments
     let mut args = Vec::new();
     if !self.is_token_char(')') {
       loop {
         // get name of the current argument
-        args.push(ok_or_return!(self.expect_id()));
+        args.push(self.expect_id()?);
         // eat ','
         if !self.is_token_char(',') {
           break;
@@ -68,7 +67,7 @@ impl<T: Read> Parser<T> {
       }
     }
     // check & eat ')'
-    ok_or_return!(self.expect_char(')'));
+    self.expect_char(')')?;
     // get function body
     self.parse_block().map(|body| {
       Box::new(Ast::FunDef {
@@ -82,11 +81,11 @@ impl<T: Read> Parser<T> {
   /// Parses blocks.
   fn parse_block(&mut self) -> Result {
     // check & eat '{'
-    ok_or_return!(self.expect_char('{'));
+    self.expect_char('{')?;
     // get statements
     let mut stmts = Vec::new();
     while !self.is_token_char('}') {
-      stmts.push(ok_or_return!(self.parse_statement()));
+      stmts.push(self.parse_statement()?);
     }
     // eat '}'
     self.next_token();
@@ -141,9 +140,9 @@ impl<T: Read> Parser<T> {
     // eat 'if'
     self.next_token();
     // get condition
-    let cond = ok_or_return!(self.parse_expr());
+    let cond = self.parse_expr()?;
     // get 'then' body
-    let then = ok_or_return!(self.parse_block());
+    let then = self.parse_block()?;
     // check & get 'else-then' body
     Ok(Box::new(Ast::If {
       cond: cond,
@@ -152,11 +151,11 @@ impl<T: Read> Parser<T> {
         // eat 'else'
         self.next_token();
         // parse 'if' or block of 'else'
-        Some(ok_or_return!(if self.is_token_key(Keyword::If) {
+        Some(if self.is_token_key(Keyword::If) {
           self.parse_if_else()
         } else {
           self.parse_block()
-        }))
+        }?)
       } else {
         None
       },
@@ -254,9 +253,9 @@ impl<T: Read> Parser<T> {
         // eat '('
         self.next_token();
         // get expression
-        let expr = ok_or_return!(self.parse_expr());
+        let expr = self.parse_expr()?;
         // check & eat ')'
-        ok_or_return!(self.expect_char(')'));
+        self.expect_char(')')?;
         Ok(expr)
       }
       _ => Self::get_error("invalid value"),
@@ -272,7 +271,7 @@ impl<T: Read> Parser<T> {
     if !self.is_token_char(')') {
       loop {
         // get the current argument
-        args.push(ok_or_return!(self.parse_expr()));
+        args.push(self.parse_expr()?);
         // eat ','
         if !self.is_token_char(',') {
           break;
@@ -281,7 +280,7 @@ impl<T: Read> Parser<T> {
       }
     }
     // check & eat ')'
-    ok_or_return!(self.expect_char(')'));
+    self.expect_char(')')?;
     Ok(Box::new(Ast::FunCall {
       name: id.to_string(),
       args: args,
@@ -294,7 +293,7 @@ impl<T: Read> Parser<T> {
     F: Fn(&mut Parser<T>) -> Result,
   {
     // get left-hand side expression
-    let mut lhs = ok_or_return!(parser(self));
+    let mut lhs = parser(self)?;
     // get the rest things
     loop {
       // stop if error
@@ -304,7 +303,7 @@ impl<T: Read> Parser<T> {
       };
       self.next_token();
       // get right-hand side expression
-      let rhs = ok_or_return!(parser(self));
+      let rhs = parser(self)?;
       // update lhs
       lhs = Box::new(Ast::Binary {
         op: op,
