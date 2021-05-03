@@ -1,4 +1,4 @@
-use super::Lexer;
+use super::lexer::Lexer;
 use crate::define;
 use define::{Ast, AstBox, Keyword, Operator, Token};
 use std::io::Read;
