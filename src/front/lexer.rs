@@ -4,7 +4,7 @@ use std::io::Read;
 
 /// Lexer for `first-step` language.
 pub struct Lexer<T: Read> {
-  readable: T,
+  reader: T,
   last_char: Option<char>,
 }
 
@@ -13,9 +13,9 @@ pub type Result = std::result::Result<Token, String>;
 
 impl<T: Read> Lexer<T> {
   /// Creates a new `Lexer` object from the specific `Read` object.
-  pub fn new(readable: T) -> Self {
+  pub fn new(reader: T) -> Self {
     Self {
-      readable: readable,
+      reader: reader,
       last_char: Some(' '),
     }
   }
@@ -24,7 +24,7 @@ impl<T: Read> Lexer<T> {
   pub fn next_token(&mut self) -> Result {
     // skip spaces
     while self.last_char.map_or(false, |c| c.is_whitespace()) {
-      self.next_char();
+      self.next_char()?;
     }
     // check the last character
     if let Some(c) = self.last_char {
@@ -42,7 +42,7 @@ impl<T: Read> Lexer<T> {
         self.handle_operator()
       } else {
         // other characters
-        self.next_char();
+        self.next_char()?;
         Ok(Token::Other(c))
       }
     } else {
@@ -52,18 +52,16 @@ impl<T: Read> Lexer<T> {
   }
 
   /// Reads a character from file.
-  fn next_char(&mut self) {
+  fn next_char(&mut self) -> std::result::Result<(), String> {
     // NOTE: UTF-8 characters will not be handled here.
     let mut single_char = [0];
-    if let Ok(n) = self.readable.read(&mut single_char) {
-      self.last_char = if n != 0 {
-        Some(single_char[0] as char)
-      } else {
-        None
-      };
-    } else {
-      self.last_char = None;
-    }
+    self.last_char = (self
+      .reader
+      .read(&mut single_char)
+      .map_err(|err| format!("{}", err))?
+      != 0)
+      .then(|| single_char[0] as char);
+    Ok(())
   }
 
   /// Handles identifiers or keywords.
@@ -75,7 +73,7 @@ impl<T: Read> Lexer<T> {
       .map_or(false, |c| c.is_alphanumeric() || c == '_')
     {
       id.push(self.last_char.unwrap());
-      self.next_char();
+      self.next_char()?;
     }
     // check if string is keyword
     if let Some(keyword) = parse_keyword(&id) {
@@ -91,7 +89,7 @@ impl<T: Read> Lexer<T> {
     let mut num = String::new();
     while self.last_char.map_or(false, |c| c.is_numeric()) {
       num.push(self.last_char.unwrap());
-      self.next_char();
+      self.next_char()?;
     }
     // convert to integer
     num
@@ -106,7 +104,7 @@ impl<T: Read> Lexer<T> {
     let mut op = String::new();
     while self.last_char.map_or(false, |c| is_operator_char(c)) {
       op.push(self.last_char.unwrap());
-      self.next_char();
+      self.next_char()?;
     }
     // check if is a valid operator
     parse_operator(&op)
@@ -118,7 +116,7 @@ impl<T: Read> Lexer<T> {
   fn handle_comment(&mut self) -> Result {
     // skip the current line
     while self.last_char.map_or(false, |c| c != '\r' && c != '\n') {
-      self.next_char();
+      self.next_char()?;
     }
     // return the next token
     self.next_token()
