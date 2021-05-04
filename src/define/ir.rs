@@ -154,6 +154,11 @@ impl FunctionDef {
     self.arg_num
   }
 
+  /// Checks if is a library function declaration.
+  pub fn is_lib(&self) -> bool {
+    self.insts.is_none()
+  }
+
   /// Gets the slot offset.
   fn slot_offset(&self) -> usize {
     ((self.arg_num + self.slot_num) / 4 + 1) * 16
