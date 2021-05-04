@@ -37,7 +37,7 @@ impl Compiler {
 
   /// Dumps RISC-V assembly of all compiled ASTs.
   pub fn dump(&self, writer: &mut impl io::Write) -> io::Result<()> {
-    for (_, func) in self.gen.funcs.iter() {
+    for func in self.gen.funcs.values().filter(|f| !f.borrow().is_lib()) {
       func.borrow().dump(writer)?;
     }
     Ok(())
