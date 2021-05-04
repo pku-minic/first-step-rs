@@ -64,18 +64,6 @@ where
     self.get(k, true)
   }
 
-  /// Removes item by the specific key,
-  /// returns true if the remove operation takes effect.
-  pub fn remove(&mut self, k: &K, recursive: bool) -> bool {
-    self.cur.as_mut().unwrap().remove(k, recursive)
-  }
-
-  /// Removes item recursively by the specific key,
-  /// returns true if the remove operation takes effect.
-  pub fn remove_rec(&mut self, k: &K) -> bool {
-    self.remove(k, true)
-  }
-
   /// Updates item by the specific key,
   /// returns true if the update operation takes effect.
   pub fn update(&mut self, k: &K, v: V, recursive: bool) -> bool {
@@ -96,16 +84,6 @@ where
     F: Fn(&HashMap<K, V>) -> bool,
   {
     self.cur.as_mut().unwrap().update_until(k, v, predicate)
-  }
-
-  /// Accesses item in the current map.
-  pub fn access(&mut self, k: &K) -> Option<&mut V> {
-    self.cur.as_mut().unwrap().map.get_mut(k)
-  }
-
-  /// Check if the current map is a root map
-  pub fn is_root(&self) -> bool {
-    self.cur.as_ref().unwrap().outer.is_none()
   }
 }
 
@@ -131,17 +109,6 @@ where
       self.outer.as_ref().unwrap().get(k, recursive)
     } else {
       None
-    }
-  }
-
-  /// Implementation of `remove` method of `NestedMap`.
-  fn remove(&mut self, k: &K, recursive: bool) -> bool {
-    if self.map.remove(k).is_some() {
-      true
-    } else if self.outer.is_some() && recursive {
-      self.outer.as_mut().unwrap().remove(k, recursive)
-    } else {
-      false
     }
   }
 
@@ -185,20 +152,15 @@ mod test {
     assert_eq!(nested.get_rec(&"test1"), Some(&1));
     assert_eq!(nested.get_rec(&"test2"), Some(&2));
     assert_eq!(nested.get_rec(&"test3"), None);
-    assert!(nested.is_root());
     nested.push();
     assert!(nested.add("test3", 3));
     assert!(nested.add("test1", 11));
     assert_eq!(nested.get_rec(&"test1"), Some(&11));
     assert_eq!(nested.get_rec(&"test2"), Some(&2));
     assert_eq!(nested.get_rec(&"test3"), Some(&3));
-    assert!(!nested.is_root());
     assert!(nested.update(&"test3", 4, false));
     assert_eq!(nested.get_rec(&"test3"), Some(&4));
     assert!(!nested.add(&"test1", 12));
-    assert!(!nested.remove(&"test2", false));
-    assert!(nested.remove_rec(&"test2"));
-    assert_eq!(nested.get_rec(&"test2"), None);
     nested.pop();
     assert_eq!(nested.get_rec(&"test3"), None);
   }
