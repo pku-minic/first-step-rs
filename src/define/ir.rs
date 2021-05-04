@@ -1,6 +1,6 @@
 use crate::define::Operator;
 use std::cell::RefCell;
-use std::io::{Error, ErrorKind, Result, Write};
+use std::io::{Result, Write};
 use std::rc::{Rc, Weak};
 
 /// Function definition.
@@ -100,10 +100,10 @@ impl FunctionDef {
   }
 
   /// Creates a new library function declaration.
-  pub fn new_lib(name: String) -> Self {
+  pub fn new_lib(name: String, arg_num: usize) -> Self {
     Self {
       name: name,
-      arg_num: 0,
+      arg_num: arg_num,
       slot_num: 0,
       insts: None,
     }
@@ -132,12 +132,7 @@ impl FunctionDef {
     // dump prologue
     writeln!(writer, "  addi sp, sp, -{}", self.slot_offset())?;
     writeln!(writer, "  sw ra, {}(sp)", self.slot_offset() - 4)?;
-    if self.arg_num > 8 {
-      return Err(Error::new(
-        ErrorKind::Other,
-        "argument count is greater than 8",
-      ));
-    }
+    debug_assert!(self.arg_num <= 8, "argument count is greater than 8");
     for i in 0..self.arg_num {
       writeln!(
         writer,
@@ -152,6 +147,11 @@ impl FunctionDef {
       dump_inst(writer, inst, self)?;
     }
     writeln!(writer, "")
+  }
+
+  /// Gets the argument number.
+  pub fn arg_num(&self) -> usize {
+    self.arg_num
   }
 
   /// Gets the slot offset.
@@ -190,12 +190,7 @@ fn dump_inst(writer: &mut impl Write, inst: &InstBox, func: &FunctionDef) -> Res
     }
     Inst::Call { dest, func, args } => {
       // dump arguments
-      if args.len() > 8 {
-        return Err(Error::new(
-          ErrorKind::Other,
-          "argument count is greater than 8",
-        ));
-      }
+      debug_assert!(args.len() <= 8, "argument count is greater than 8");
       for (i, arg) in args.iter().enumerate() {
         dump_read(writer, arg)?;
         writeln!(writer, "  mv a{}, {}", i, RESULT_REG)?;
