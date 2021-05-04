@@ -2,26 +2,49 @@ mod back;
 mod define;
 mod front;
 
-use back::interpreter::Interpreter;
+use back::{compiler::Compiler, interpreter::Interpreter};
+use define::AstBox;
 use front::{lexer::Lexer, parser::Parser};
 use std::env;
 use std::fs;
+use std::io;
 use std::process;
 
-fn interpret(file: fs::File) -> Result<i32, String> {
+/// Runs parser.
+fn parse<'a, F, T>(file: fs::File, mut action: F) -> Result<(), String>
+where
+  F: FnMut(AstBox) -> Result<T, String>,
+{
   use front::parser::Error;
   let mut parser = Parser::new(Lexer::new(file));
-  let mut intp = Interpreter::new();
   // parse the input file
   loop {
     match parser.parse_next() {
-      Ok(ast) => intp.add_func_def(ast)?,
+      Ok(ast) => action(ast)?,
       Err(Error::End) => break,
       Err(Error::Error(err)) => return Err(err),
-    }
+    };
   }
+  Ok(())
+}
+
+/// Runs parser & interpreter.
+fn interpret(file: fs::File) -> Result<i32, String> {
+  // parse the program
+  let mut intp = Interpreter::new();
+  parse(file, |ast| Ok(intp.add_func_def(ast)?))?;
   // evaluate the program
   Ok(intp.eval()?)
+}
+
+/// Runs parser & compiler.
+fn compile(file: fs::File, writer: &mut impl io::Write) -> Result<(), String> {
+  // parse the program
+  let mut comp = Compiler::new();
+  parse(file, |ast| Ok(comp.compile(ast)?))?;
+  // dump the compiled assembly
+  comp.dump(writer).map_err(|err| format!("{}", err))?;
+  Ok(())
 }
 
 fn main() -> Result<(), String> {
@@ -33,7 +56,18 @@ fn main() -> Result<(), String> {
   }
   // open file
   let file = fs::File::open(&args[1]).map_err(|err| format!("{}", err))?;
-  // run interpreter
-  let code = interpret(file)?;
-  process::exit(code);
+  // check if need to compile the input file
+  if args.len() >= 3 && args[2] == "-c" {
+    // initialize output stream
+    if args.len() >= 5 && args[3] == "-o" {
+      let mut writer = fs::File::create(&args[4]).map_err(|err| format!("{}", err))?;
+      compile(file, &mut writer)
+    } else {
+      compile(file, &mut io::stdout())
+    }
+  } else {
+    // run interpreter
+    let code = interpret(file)?;
+    process::exit(code);
+  }
 }
