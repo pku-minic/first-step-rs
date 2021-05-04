@@ -21,3 +21,18 @@ macro_rules! unwrap_struct {
     }
   };
 }
+
+/// Creates a collection with the specific values.
+///
+/// See: https://stackoverflow.com/a/27582993
+#[macro_export]
+macro_rules! collection {
+  // map-like
+  ($($k:expr => $v:expr),* $(,)?) => {
+    std::iter::Iterator::collect(std::array::IntoIter::new([$(($k, $v),)*]))
+  };
+  // set-like
+  ($($v:expr),* $(,)?) => {
+    std::iter::Iterator::collect(std::array::IntoIter::new([$($v,)*]))
+  };
+}
