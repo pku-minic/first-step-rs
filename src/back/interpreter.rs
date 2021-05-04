@@ -21,7 +21,7 @@ impl Interpreter {
     Self {
       intp: InterpreterImpl {
         funcs: Rc::new(RefCell::new(HashMap::new())),
-        envs: Rc::new(RefCell::new(NestedMap::new())),
+        envs: NestedMap::new(),
       },
     }
   }
@@ -59,7 +59,7 @@ struct InterpreterImpl {
   /// All function definitions.
   funcs: Rc<RefCell<HashMap<String, AstBox>>>,
   /// Environments.
-  envs: Rc<RefCell<NestedMap<String, i32>>>,
+  envs: NestedMap<String, i32>,
 }
 
 lazy_static! {
@@ -114,23 +114,23 @@ impl AstVisitor for InterpreterImpl {
 
   fn visit_fundef(&mut self, _name: &String, _args: &[String], body: &AstBox) -> Self::Result {
     // set up the default return value
-    let ret = self.envs.borrow_mut().add(RET_VAL.clone(), 0);
+    let ret = self.envs.add(RET_VAL.clone(), 0);
     debug_assert!(ret, "environment corrupted");
     // evaluate function body
     self.visit(body)?;
     // get return value
-    Ok(*self.envs.borrow().get(&RET_VAL, false).unwrap())
+    Ok(*self.envs.get(&RET_VAL, false).unwrap())
   }
 
   fn visit_block(&mut self, stmts: &[AstBox]) -> Self::Result {
     // enter a new environment
-    self.envs.borrow_mut().push();
+    self.envs.push();
     // evaluate all statements
     for stmt in stmts {
       self.visit(stmt)?;
     }
     // exit the current environment
-    self.envs.borrow_mut().pop();
+    self.envs.pop();
     Ok(0)
   }
 
@@ -138,7 +138,7 @@ impl AstVisitor for InterpreterImpl {
     // evaluate the expression
     let expr = self.visit(expr)?;
     // update the current environment
-    if self.envs.borrow_mut().add(name.clone(), expr) {
+    if self.envs.add(name.clone(), expr) {
       Ok(0)
     } else {
       Err("symbol has already been defined")
@@ -151,7 +151,6 @@ impl AstVisitor for InterpreterImpl {
     // update value of the symbol
     self
       .envs
-      .borrow_mut()
       .update_until(name, expr, |map| map.contains_key::<String>(&RET_VAL))
       .then(|| 0)
       .ok_or("symbol has not been defined")
@@ -172,7 +171,7 @@ impl AstVisitor for InterpreterImpl {
     // evaluate the return value
     let expr = self.visit(expr)?;
     // update the current return value
-    let succ = self.envs.borrow_mut().update_rec(&RET_VAL, expr);
+    let succ = self.envs.update_rec(&RET_VAL, expr);
     debug_assert!(succ, "environment corrupted");
     Ok(0)
   }
@@ -231,7 +230,7 @@ impl AstVisitor for InterpreterImpl {
     match self.funcs.clone().borrow().get(name) {
       Some(func) => {
         // make a new environment for arguments
-        self.envs.borrow_mut().push();
+        self.envs.push();
         // evaluate arguments
         let (_, arg_names, _) = unwrap_struct!(func.as_ref(), Ast::FunDef, name, args, body);
         if arg_names.len() != args.len() {
@@ -241,14 +240,14 @@ impl AstVisitor for InterpreterImpl {
           // evaluate the current arguments
           let arg = self.visit(arg)?;
           // add to the current environment
-          if !self.envs.borrow_mut().add(name.clone(), arg) {
+          if !self.envs.add(name.clone(), arg) {
             return Err("redifinition of argument");
           }
         }
         // call the specific function
         let ret = self.visit(func);
         // exit the current environment
-        self.envs.borrow_mut().pop();
+        self.envs.pop();
         ret
       }
       None => Err("function not found"),
@@ -263,7 +262,6 @@ impl AstVisitor for InterpreterImpl {
     // find in environment
     self
       .envs
-      .borrow()
       .get_rec(val)
       .map_or(Err("symbol has not been defined"), |v| Ok(*v))
   }
