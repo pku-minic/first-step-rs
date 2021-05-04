@@ -41,9 +41,7 @@ where
   /// Panics when popping from root map.
   pub fn pop(&mut self) {
     self.cur = self.cur.as_mut().unwrap().outer.take();
-    if self.cur.is_none() {
-      panic!("popping from the root map")
-    }
+    assert!(!self.cur.is_none(), "popping from the root map")
   }
 
   /// Adds item to the current map,

@@ -27,7 +27,7 @@ impl Interpreter {
   }
 
   /// Adds the specific function definition to interpreter
-  pub fn add_func_def(&mut self, func: AstBox) -> std::result::Result<(), &'static str> {
+  pub fn add_func_def(&mut self, func: AstBox) -> std::result::Result<(), &str> {
     match func.as_ref() {
       // get function name
       Ast::FunDef { name, .. } => {
