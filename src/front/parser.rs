@@ -37,14 +37,13 @@ impl<T: Read> Parser<T> {
     match &self.cur_token {
       Ok(Token::End) => Err(Error::End),
       Ok(_) => self.parse_fundef(),
-      Err(err) => Err(Error::Error(err.to_string())),
+      Err(err) => Err(Error::Error(err.clone())),
     }
   }
 
   /// Gets the next token and returns it.
-  fn next_token(&mut self) -> &super::lexer::Result {
+  fn next_token(&mut self) {
     self.cur_token = self.lexer.next_token();
-    &self.cur_token
   }
 
   /// Parses function definitions.
@@ -94,7 +93,7 @@ impl<T: Read> Parser<T> {
 
   /// Parses statements.
   fn parse_statement(&mut self) -> Result {
-    return match &self.cur_token {
+    match &self.cur_token {
       Ok(Token::Id(id)) => {
         let id = id.to_string();
         self.parse_define_assign(id)
@@ -102,7 +101,7 @@ impl<T: Read> Parser<T> {
       Ok(Token::Key(Keyword::If)) => self.parse_if_else(),
       Ok(Token::Key(Keyword::Return)) => self.parse_return(),
       _ => Self::get_error("invalid statement"),
-    };
+    }
   }
 
   /// Parses define/assign statements.
@@ -121,17 +120,17 @@ impl<T: Read> Parser<T> {
     self.next_token();
     // get expression
     self.parse_expr().map(|expr| {
-      if is_define {
-        Box::new(Ast::Define {
+      Box::new(if is_define {
+        Ast::Define {
           name: id,
           expr: expr,
-        })
+        }
       } else {
-        Box::new(Ast::Assign {
+        Ast::Assign {
           name: id,
           expr: expr,
-        })
-      }
+        }
+      })
     })
   }
 
@@ -315,8 +314,8 @@ impl<T: Read> Parser<T> {
   }
 
   /// Returns a parser error.
-  fn get_error(message: &'static str) -> Result {
-    Err(Error::Error(String::from(message)))
+  fn get_error(message: &str) -> Result {
+    Err(Error::Error(message.to_string()))
   }
 
   /// Expects an identifier from lexer.
@@ -326,7 +325,7 @@ impl<T: Read> Parser<T> {
       self.next_token();
       Ok(id)
     } else {
-      Err(Error::Error(String::from("expected identifier")))
+      Err(Error::Error("expected identifier".to_string()))
     }
   }
 
