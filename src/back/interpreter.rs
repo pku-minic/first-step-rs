@@ -115,7 +115,7 @@ impl AstVisitor for InterpreterImpl {
   fn visit_fundef(&mut self, _name: &String, _args: &[String], body: &AstBox) -> Self::Result {
     // set up the default return value
     let ret = self.envs.borrow_mut().add(RET_VAL.clone(), 0);
-    assert_eq!(ret, true, "environment corrupted");
+    debug_assert!(ret, "environment corrupted");
     // evaluate function body
     self.visit(body)?;
     // get return value
@@ -126,7 +126,7 @@ impl AstVisitor for InterpreterImpl {
     // enter a new environment
     self.envs.borrow_mut().push();
     // evaluate all statements
-    for stmt in stmts.iter() {
+    for stmt in stmts {
       self.visit(stmt)?;
     }
     // exit the current environment
@@ -173,7 +173,7 @@ impl AstVisitor for InterpreterImpl {
     let expr = self.visit(expr)?;
     // update the current return value
     let succ = self.envs.borrow_mut().update_rec(&RET_VAL, expr);
-    assert_eq!(succ, true, "environment corrupted");
+    debug_assert!(succ, "environment corrupted");
     Ok(0)
   }
 

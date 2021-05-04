@@ -180,24 +180,24 @@ mod test {
   #[test]
   fn test_nested() {
     let mut nested = NestedMap::new();
-    assert_eq!(nested.add("test1", 1), true);
-    assert_eq!(nested.add("test2", 2), true);
+    assert!(nested.add("test1", 1));
+    assert!(nested.add("test2", 2));
     assert_eq!(nested.get_rec(&"test1"), Some(&1));
     assert_eq!(nested.get_rec(&"test2"), Some(&2));
     assert_eq!(nested.get_rec(&"test3"), None);
-    assert_eq!(nested.is_root(), true);
+    assert!(nested.is_root());
     nested.push();
-    assert_eq!(nested.add("test3", 3), true);
-    assert_eq!(nested.add("test1", 11), true);
+    assert!(nested.add("test3", 3));
+    assert!(nested.add("test1", 11));
     assert_eq!(nested.get_rec(&"test1"), Some(&11));
     assert_eq!(nested.get_rec(&"test2"), Some(&2));
     assert_eq!(nested.get_rec(&"test3"), Some(&3));
-    assert_eq!(nested.is_root(), false);
-    assert_eq!(nested.update(&"test3", 4, false), true);
+    assert!(!nested.is_root());
+    assert!(nested.update(&"test3", 4, false));
     assert_eq!(nested.get_rec(&"test3"), Some(&4));
-    assert_eq!(nested.add(&"test1", 12), false);
-    assert_eq!(nested.remove(&"test2", false), false);
-    assert_eq!(nested.remove_rec(&"test2"), true);
+    assert!(!nested.add(&"test1", 12));
+    assert!(!nested.remove(&"test2", false));
+    assert!(nested.remove_rec(&"test2"));
     assert_eq!(nested.get_rec(&"test2"), None);
     nested.pop();
     assert_eq!(nested.get_rec(&"test3"), None);

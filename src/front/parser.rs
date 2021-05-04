@@ -416,6 +416,6 @@ mod test {
     assert_eq!(*id, "x");
     let (val,) = unwrap_struct!(&**rhs, Ast::Int, val);
     assert_eq!(*val, 11);
-    assert_eq!(else_then.is_none(), true);
+    assert!(else_then.is_none());
   }
 }
