@@ -1,5 +1,7 @@
 use crate::define::Operator;
+use std::cell::RefCell;
 use std::io::{Error, ErrorKind, Result, Write};
+use std::rc::{Rc, Weak};
 
 /// Function definition.
 pub struct FunctionDef {
@@ -14,8 +16,10 @@ pub struct FunctionDef {
   insts: Option<Vec<InstBox>>,
 }
 
-/// Box for function definitions.
-pub type FunDefBox = Box<FunctionDef>;
+/// Pointer for function definitions.
+pub type FunDefRc = Rc<RefCell<FunctionDef>>;
+/// Weak reference for function definitions.
+pub type FunDefWeak = Weak<RefCell<FunctionDef>>;
 
 /// IR value.
 pub enum Value {
@@ -29,49 +33,49 @@ pub enum Value {
   Integer { val: i32 },
 }
 
-/// Box for IR values.
-pub type ValBox = Box<Value>;
+/// Pointer for IR values.
+pub type ValRc = Rc<Value>;
 
 /// IR instruction.
 pub enum Inst {
   /// Assignment.
-  Assign { dest: ValBox, val: ValBox },
+  Assign { dest: ValRc, val: ValRc },
 
   /// Branch if not equal to zero.
-  BranchNez { cond: ValBox, label: ValBox },
+  BranchNez { cond: ValRc, label: ValRc },
 
   /// Branch if equal to zero.
-  BranchEqz { cond: ValBox, label: ValBox },
+  BranchEqz { cond: ValRc, label: ValRc },
 
   /// Unconditional jump.
-  Jump { label: ValBox },
+  Jump { label: ValRc },
 
   /// Label definition.
-  Label { label: ValBox },
+  Label { label: ValRc },
 
   /// Function call.
   Call {
-    dest: ValBox,
-    func: FunDefBox,
-    args: Vec<ValBox>,
+    dest: ValRc,
+    func: FunDefWeak,
+    args: Vec<ValRc>,
   },
 
   /// Function return.
-  Return { val: ValBox },
+  Return { val: ValRc },
 
   /// Binary operation.
   Binary {
-    dest: ValBox,
+    dest: ValRc,
     op: Operator,
-    lhs: ValBox,
-    rhs: ValBox,
+    lhs: ValRc,
+    rhs: ValRc,
   },
 
   /// Unary operation.
   Unary {
-    dest: ValBox,
+    dest: ValRc,
     op: Operator,
-    opr: ValBox,
+    opr: ValRc,
   },
 }
 
@@ -112,8 +116,8 @@ impl FunctionDef {
   }
 
   /// Creates a new stack slot definition.
-  pub fn add_slot(&mut self) -> ValBox {
-    let slot = Box::new(Value::Slot { id: self.slot_num });
+  pub fn add_slot(&mut self) -> ValRc {
+    let slot = Rc::new(Value::Slot { id: self.slot_num });
     self.slot_num += 1;
     slot
   }
@@ -197,7 +201,7 @@ fn dump_inst(writer: &mut impl Write, inst: &InstBox, func: &FunctionDef) -> Res
         writeln!(writer, "  mv a{}, {}", i, RESULT_REG)?;
       }
       // dump function call
-      writeln!(writer, "  call {}", func.name)?;
+      writeln!(writer, "  call {}", func.upgrade().unwrap().borrow().name)?;
       writeln!(writer, "  mv {}, a0", RESULT_REG)?;
       dump_write(writer, dest)
     }
@@ -284,7 +288,7 @@ fn dump_inst(writer: &mut impl Write, inst: &InstBox, func: &FunctionDef) -> Res
 }
 
 /// Dumps RISC-V assembly of reading the specific value.
-fn dump_read(writer: &mut impl Write, val: &ValBox) -> Result<()> {
+fn dump_read(writer: &mut impl Write, val: &ValRc) -> Result<()> {
   match val.as_ref() {
     Value::Slot { id } => writeln!(writer, "  lw {}, {}(sp)", RESULT_REG, id * 4),
     Value::ArgRef { id } => writeln!(writer, "  mv {}, s{}", RESULT_REG, id),
@@ -294,7 +298,7 @@ fn dump_read(writer: &mut impl Write, val: &ValBox) -> Result<()> {
 }
 
 /// Dumps RISC-V assembly of writing the specific value.
-fn dump_write(writer: &mut impl Write, val: &ValBox) -> Result<()> {
+fn dump_write(writer: &mut impl Write, val: &ValRc) -> Result<()> {
   match val.as_ref() {
     Value::Slot { id } => writeln!(writer, "  sw {}, {}(sp)", RESULT_REG, id * 4),
     Value::ArgRef { id } => writeln!(writer, "  mv s{}, {}", id, RESULT_REG),
