@@ -1,4 +1,4 @@
-# first-step-rust
+# first-step-rs
 
 Take your first step in writing a compiler, using Rust.
 
